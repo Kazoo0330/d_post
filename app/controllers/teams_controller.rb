@@ -1,6 +1,7 @@
 class TeamsController < ApplicationController
   before_action :authenticate_user!
-  before_action :set_team, only: %i[show edit update destroy]
+  before_action :set_team, only: %i[show edit update destroy move_owner]
+  before_action :owner_requierment, only: %i[edit change_owner]
 
   def index
     @teams = Team.all
@@ -51,6 +52,14 @@ class TeamsController < ApplicationController
     @team = current_user.keep_team_id ? Team.find(current_user.keep_team_id) : current_user.teams.first
   end
 
+  def move_owner
+    if @team.update(owner_params)
+      redirect_to @team, notice: 'the owner right successfully moved!'
+    else
+      render @team
+    end
+  end
+
   private
 
   def set_team
@@ -60,4 +69,14 @@ class TeamsController < ApplicationController
   def team_params
     params.fetch(:team, {}).permit %i[name icon icon_cache owner_id keep_team_id]
   end
+
+  def owner_params
+    params.permit(:owner_id)
+  end
+
+  def owner_requirement
+    team = Team.friendly.find(params[:id])
+    redirect_to team_path(team.id), notice: 'you have no rights for doing it' unless current_user.id == team.owner_id
+  end
+
 end
