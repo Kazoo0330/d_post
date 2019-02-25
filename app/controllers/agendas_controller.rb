@@ -21,6 +21,25 @@ class AgendasController < ApplicationController
     end
   end
 
+    def destroy
+    agenda = Agenda.find(params[:id])
+    team_members = agenda.team.members
+
+    agenda_user = agenda.user_id
+    owner_id = agenda.team.owner_id
+
+    if current_user.id != agenda_user && current_user.id != owner_id
+      redirect_to dashboard_url, notice: 'the agenda can be deleted by the tuthor or team owner.'
+    elsif agenda.destroy
+      team_members.each do | member |
+        AssignMailer.agenda_deleted(member.email, agenda.title).deliver
+      end
+      redirect_to dashboard_url, notice: 'the agenda was deleted.'
+    else
+      redirect_to dashboard_url, notice: 'unable to delete.'
+    end
+  end
+
   private
 
   def set_agenda
